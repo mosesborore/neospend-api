@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from ..core.security import (
+from api.core.security import (
     EXPIRE_MINUTES,
     Token,
     authenticate_user,
@@ -15,7 +15,9 @@ from ..core.security import (
     get_current_active_user,
     get_password_hash,
 )
-from ..database.models import Account, User, UserBase, get_session
+from api.database import get_session
+from api.database.models import Account, User
+from api.database.schemas import UserCreate, UserPublic
 
 router = APIRouter()
 
@@ -44,7 +46,7 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
 
 
 @router.post("/register", response_model=RegisterResp, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserBase, response: Response, session: Session = Depends(get_session)):
+async def register_user(user_data: UserCreate, response: Response, session: Session = Depends(get_session)):
     try:
         data = user_data.model_dump()
 
@@ -54,7 +56,7 @@ async def register_user(user_data: UserBase, response: Response, session: Sessio
         session.add(new_user)
         session.commit()
         response.status_code = status.HTTP_201_CREATED
-        return {"msg": "User registered"}
+        return {"msg": "User registered."}
     except IntegrityError:
         response.status_code = status.HTTP_200_OK
         return {"msg": "User already exists."}
@@ -69,7 +71,7 @@ def get_accounts(session: SessionDep):
     return results
 
 
-@router.get("/users/me/", response_model=User, response_model_exclude={"password"})
+@router.get("/users/me/", response_model=UserPublic)
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ):
