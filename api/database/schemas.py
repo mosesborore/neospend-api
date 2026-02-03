@@ -15,4 +15,9 @@ class UserPublic(UserBase):
 
 
 class AccountBase(SQLModel):
+    name: str
+    balance: float = 0.0
+
+
+class AccountCreate(AccountBase):
     pass
