@@ -17,7 +17,7 @@ ALGORITHM = "HS256"
 EXPIRE_MINUTES = 60
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 password_hash = PasswordHash.recommended()
 
 
