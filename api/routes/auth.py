@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from api.core.security import (
     EXPIRE_MINUTES,
@@ -16,7 +16,7 @@ from api.core.security import (
     get_password_hash,
 )
 from api.database import get_session
-from api.database.models import Account, User
+from api.database.models import User
 from api.database.schemas import UserCreate, UserPublic
 
 router = APIRouter()
@@ -27,6 +27,7 @@ class RegisterResp(BaseModel):
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
+AuthorizedUser = Annotated[User, Depends(get_current_active_user)]
 
 
 @router.post("/login")
@@ -62,24 +63,15 @@ async def register_user(user_data: UserCreate, response: Response, session: Sess
         return {"msg": "User already exists."}
 
 
-@router.get("/accounts")
-def get_accounts(session: SessionDep):
-    exp = select(Account)
-
-    results = session.exec(exp)
-
-    return results
-
-
 @router.get("/users/me/", response_model=UserPublic)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    user: AuthorizedUser,
 ):
-    return current_user
+    return user
 
 
 @router.get("/users/me/items/")
 async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    user: AuthorizedUser,
 ):
-    return [{"item_id": "Foo", "owner": current_user.email}]
+    return [{"item_id": "Foo", "owner": user.email}]
