@@ -25,6 +25,10 @@ class AccountCreate(AccountBase):
     pass
 
 
+class AccountUpdate(AccountBase):
+    pass
+
+
 class CategoryBase(SQLModel):
     name: str = Field(min_length=1, max_length=64)
     type_: str = Field(
@@ -36,7 +40,7 @@ class CategoryCreate(CategoryBase):
     pass
 
 
-class CategoryUpdate(CategoryBase):
+class CategoryUpdate(SQLModel):
     name: str | None
     type_: str | None = Field(
         default=None,
