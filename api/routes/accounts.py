@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,7 +8,7 @@ from sqlmodel import Session, and_, select
 from api.core.security import get_current_active_user
 from api.database import get_session
 from api.database.models import Account, User
-from api.database.schemas import AccountCreate
+from api.database.schemas import AccountCreate, AccountUpdate
 
 router = APIRouter(prefix="/accounts")
 
@@ -20,19 +21,24 @@ def create_account(new_account: AccountCreate, session: SessionDependency, user:
     payload = new_account.model_dump()
 
     name = payload.get("name")
+    initial_balance = payload.get("initial_balance")
+    balance = payload.get("balance")
 
+    balance = balance + initial_balance
     name = name.strip().title() if name else "No Title"
 
-    payload.update({"name": name, "user_id": user.id})
+    payload.update(
+        {
+            "name": name,
+            "user_id": user.id,
+            "balance": balance,
+        }
+    )
 
     account = Account(**payload)
-
     session.add(account)
-
     session.commit()
-
     session.refresh(account)
-    print(payload, account.dict())
 
     return account
 
@@ -53,6 +59,39 @@ def get_account(id: int, user: AuthorizedUser, session: SessionDependency):
 
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not Found")
+    return account
+
+
+@router.put("/{id}")
+def update_account(id: int, account_payload: AccountUpdate, user: AuthorizedUser, session: SessionDependency):
+    statement = select(Account).where(and_(Account.user_id == user.id, Account.id == id))
+    account = session.exec(statement).one()
+
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not Found")
+
+    account_data = account_payload.model_dump(exclude_unset=True)
+
+    name = account_data.get("name")
+    initial_balance = account_data.get("initial_balance")
+
+    if name:
+        account_data.update({"name": name.strip().title()})
+    if initial_balance:
+        prev_initial_balance = account.initial_balance
+        prev_balance = account.balance
+
+        current_balance = (prev_balance - prev_initial_balance) + initial_balance
+
+        account_data.update({"initial_balance": initial_balance, "balance": current_balance})
+
+    account_data.update({"updated_at": datetime.now()})
+
+    account.sqlmodel_update(account_data)
+
+    session.add(account)
+    session.commit()
+    session.refresh(account)
     return account
 
 

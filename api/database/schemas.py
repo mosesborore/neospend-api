@@ -17,7 +17,8 @@ class UserPublic(UserBase):
 
 
 class AccountBase(SQLModel):
-    name: str
+    name: str = Field(min_length=1, max_length=64)
+    initial_balance: Decimal = Field(default=0, max_digits=12, decimal_places=2)
     balance: Decimal = Field(default=0, max_digits=12, decimal_places=2)
 
 
@@ -25,8 +26,9 @@ class AccountCreate(AccountBase):
     pass
 
 
-class AccountUpdate(AccountBase):
-    pass
+class AccountUpdate(SQLModel):
+    name: str | None
+    initial_balance: Decimal | None
 
 
 class CategoryBase(SQLModel):
