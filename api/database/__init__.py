@@ -1,4 +1,4 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, text
 
 from . import models
 
@@ -13,6 +13,9 @@ engine = create_engine(sqlite_url, echo=True)
 
 def init_db():
     SQLModel.metadata.create_all(engine)
+    with engine.connect() as connection:
+        connection.execute(text("PRAGMA foreign_keys=ON"))
+        connection.commit()
 
 
 def get_session():

@@ -1,9 +1,6 @@
 from decimal import Decimal
 
 from sqlmodel import Field, SQLModel
-from typing_extensions import Literal
-
-TYPE = Literal["expense", "income"]
 
 
 class UserBase(SQLModel):
@@ -26,3 +23,26 @@ class AccountBase(SQLModel):
 
 class AccountCreate(AccountBase):
     pass
+
+
+class CategoryBase(SQLModel):
+    name: str = Field(min_length=1, max_length=64)
+    type_: str = Field(
+        title="type", serialization_alias="type", validation_alias="type", min_length=1, max_length=64
+    )
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class CategoryUpdate(CategoryBase):
+    name: str | None
+    type_: str | None = Field(
+        default=None,
+        title="type",
+        serialization_alias="type",
+        validation_alias="type",
+        min_length=1,
+        max_length=64,
+    )
