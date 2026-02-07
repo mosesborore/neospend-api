@@ -71,12 +71,13 @@ def update_account(id: int, account_payload: AccountUpdate, user: AuthorizedUser
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not Found")
 
     account_data = account_payload.model_dump(exclude_unset=True)
+    print("account data: ", account_data)
 
     name = account_data.get("name")
     initial_balance = account_data.get("initial_balance")
-
     if name:
         account_data.update({"name": name.strip().title()})
+        updated = True
     if initial_balance:
         prev_initial_balance = account.initial_balance
         prev_balance = account.balance
@@ -84,14 +85,15 @@ def update_account(id: int, account_payload: AccountUpdate, user: AuthorizedUser
         current_balance = (prev_balance - prev_initial_balance) + initial_balance
 
         account_data.update({"initial_balance": initial_balance, "balance": current_balance})
+        updated = True
 
-    account_data.update({"updated_at": datetime.now()})
+    if updated:
+        account_data.update({"updated_at": datetime.now()})
+        account.sqlmodel_update(account_data)
 
-    account.sqlmodel_update(account_data)
-
-    session.add(account)
-    session.commit()
-    session.refresh(account)
+        session.add(account)
+        session.commit()
+        session.refresh(account)
     return account
 
 
