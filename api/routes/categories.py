@@ -28,6 +28,16 @@ def create_category(
 
     name = payload.get("name")
     payload.update({"name": name.strip().title(), "user_id": user.id})
+
+    type_ = payload.get("type_")
+
+    if type_:
+        if type_ not in ["income", "expense"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="type should be either 'expense' or 'income'."
+            )
+        payload.update({"type_": type_})
+
     category = Category(**payload)
     session.add(category)
     session.commit()
