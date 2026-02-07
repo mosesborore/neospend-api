@@ -52,7 +52,6 @@ async def register_user(user_data: UserCreate, response: Response, session: Sess
         data = user_data.model_dump()
 
         data.update({"password": get_password_hash(data["password"])})
-        print(data)
         new_user = User(**data)
         session.add(new_user)
         session.commit()
