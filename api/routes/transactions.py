@@ -61,6 +61,25 @@ def create_transaction(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=e)
 
 
+@router.get("", response_model=list[Transaction])
+def get_accounts(user: AuthorizedUser, session: SessionDependency):
+    statement = select(Transaction).where(Transaction.user_id == user.id)
+
+    transactions = session.exec(statement).all()
+
+    return transactions
+
+
+@router.get("/{id}", response_model=Transaction)
+def get_account(id: int, user: AuthorizedUser, session: SessionDependency):
+    statement = select(Transaction).where(and_(Transaction.user_id == user.id, Transaction.id == id))
+    transaction = session.exec(statement).first()
+
+    if not transaction:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not Found")
+    return transaction
+
+
 @router.delete("{id}", response_model=DeleteResponse)
 def delete_transaction(id: int, session: SessionDependency, user: AuthorizedUser):
     statement = select(Transaction).where(and_(Transaction.id == id, Transaction.user_id == user.id))
