@@ -22,16 +22,14 @@ def create_account(new_account: AccountCreate, session: SessionDependency, user:
 
     name = payload.get("name")
     initial_balance = payload.get("initial_balance")
-    balance = payload.get("balance")
 
-    balance = balance + initial_balance
     name = name.strip().title() if name else "No Title"
 
     payload.update(
         {
             "name": name,
             "user_id": user.id,
-            "balance": balance,
+            "balance": initial_balance,
         }
     )
 

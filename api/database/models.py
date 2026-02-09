@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 
 from sqlmodel import Field, Relationship
 
@@ -15,6 +16,7 @@ class User(UserBase, table=True):
 
 class Account(AccountBase, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
+    balance: Decimal = Field(default=0, max_digits=12, decimal_places=2)
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     updated_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     user_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
