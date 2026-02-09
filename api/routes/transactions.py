@@ -62,7 +62,7 @@ def create_transaction(
 
 
 @router.get("", response_model=list[Transaction])
-def get_accounts(user: AuthorizedUser, session: SessionDependency):
+def get_transactions(user: AuthorizedUser, session: SessionDependency):
     statement = select(Transaction).where(Transaction.user_id == user.id)
 
     transactions = session.exec(statement).all()
@@ -71,13 +71,18 @@ def get_accounts(user: AuthorizedUser, session: SessionDependency):
 
 
 @router.get("/{id}", response_model=Transaction)
-def get_account(id: int, user: AuthorizedUser, session: SessionDependency):
+def get_transaction(id: int, user: AuthorizedUser, session: SessionDependency):
     statement = select(Transaction).where(and_(Transaction.user_id == user.id, Transaction.id == id))
     transaction = session.exec(statement).first()
 
     if not transaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not Found")
     return transaction
+
+
+@router.get("/{id}", response_model=Transaction)
+def update_transaction(id: int, user: AuthorizedUser, session: SessionDependency):
+    pass
 
 
 @router.delete("{id}", response_model=DeleteResponse)
