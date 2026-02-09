@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from pydantic import BaseModel
 from sqlmodel import Session, and_, select
 from typing_extensions import Literal
 
@@ -10,6 +9,8 @@ from api.core.security import get_current_active_user
 from api.database import get_session
 from api.database.models import Category, User
 from api.database.schemas import CategoryCreate, CategoryUpdate
+
+from .schemas import DeleteResponse
 
 router = APIRouter(prefix="/categories")
 
@@ -86,11 +87,7 @@ def update_category(
     return category
 
 
-class DeleteResp(BaseModel):
-    ok: bool
-
-
-@router.delete("/{id}", response_model=DeleteResp)
+@router.delete("/{id}", response_model=DeleteResponse)
 def delete_category(id: int, user: AuthorizedUser, session: SessionDependency):
     statement = select(Category).where(and_(Category.user_id == user.id, Category.id == id))
     category = session.exec(statement).first()

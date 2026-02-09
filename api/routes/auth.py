@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
@@ -19,11 +18,9 @@ from api.database import get_session
 from api.database.models import User
 from api.database.schemas import UserCreate, UserPublic
 
+from .schemas import GenericResponse
+
 router = APIRouter()
-
-
-class RegisterResp(BaseModel):
-    msg: str
 
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -46,7 +43,7 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/register", response_model=RegisterResp, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=GenericResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate, response: Response, session: Session = Depends(get_session)):
     try:
         data = user_data.model_dump()

@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 from sqlmodel import Session, and_, select
 
 from api.core.security import get_current_active_user
 from api.database import get_session
 from api.database.models import Account, User
 from api.database.schemas import AccountCreate, AccountUpdate
+
+from .schemas import DeleteResponse
 
 router = APIRouter(prefix="/accounts")
 
@@ -95,11 +96,7 @@ def update_account(id: int, account_payload: AccountUpdate, user: AuthorizedUser
     return account
 
 
-class DeleteResp(BaseModel):
-    ok: bool
-
-
-@router.delete("/{id}", response_model=DeleteResp)
+@router.delete("/{id}", response_model=DeleteResponse)
 def delete_account(id: int, user: AuthorizedUser, session: SessionDependency):
     statement = select(Account).where(and_(Account.user_id == user.id, Account.id == id))
     account = session.exec(statement).first()
