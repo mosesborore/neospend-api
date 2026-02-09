@@ -40,9 +40,7 @@ class AccountUpdate(SQLModel):
 
 class CategoryBase(SQLModel):
     name: str = Field(min_length=1, max_length=64)
-    type_: str = Field(
-        title="type", serialization_alias="type", validation_alias="type", min_length=1, max_length=64
-    )
+    kind: TransactionKind
 
 
 class CategoryCreate(CategoryBase):
@@ -50,15 +48,7 @@ class CategoryCreate(CategoryBase):
 
 
 class CategoryUpdate(SQLModel):
-    name: str | None
-    type_: str | None = Field(
-        default=None,
-        title="type",
-        serialization_alias="type",
-        validation_alias="type",
-        min_length=1,
-        max_length=64,
-    )
+    name: str | None = None
 
 
 class TransactionBase(SQLModel):
@@ -69,9 +59,6 @@ class TransactionBase(SQLModel):
     account_id: int = Field(foreign_key="account.id", index=True, ondelete="CASCADE")
     category_id: int = Field(foreign_key="category.id", index=True, ondelete="CASCADE")
     kind: TransactionKind  # used kind instead of 'type' since it's a Python keyword
-    
-    
-    
 
 
 class TransactionCreate(TransactionBase):
