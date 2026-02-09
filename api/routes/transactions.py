@@ -2,13 +2,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, and_, select
 from typing_extensions import Literal
 
 from api.core.security import get_current_active_user
 from api.database import get_session
 from api.database.models import Account, Category, Transaction, User
 from api.database.schemas import TransactionCreate, TransactionKind
+
+from .schemas import DeleteResponse
 
 router = APIRouter(prefix="/transactions")
 
@@ -57,3 +59,19 @@ def create_transaction(
         return db_transaction
     except ValidationError as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=e)
+
+
+@router.delete("{id}", response_model=DeleteResponse)
+def delete_transaction(id: int, session: SessionDependency, user: AuthorizedUser):
+    statement = select(Transaction).where(and_(Transaction.id == id, Transaction.user_id == user.id))
+    try:
+        transaction = session.exec(statement).first()
+
+        if transaction is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found.")
+
+        session.delete(transaction)
+        session.commit()
+        return {"ok": True}
+    except Exception:
+        return {"ok": False}
