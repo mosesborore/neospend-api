@@ -1,9 +1,6 @@
 from sqlmodel import Session, SQLModel, create_engine, text
 
-from . import models
-
-__all__ = [models]
-
+from . import models as models
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -22,4 +19,3 @@ def get_session():
     """Returns a session to use"""
     with Session(engine) as session:
         yield session
-        session.close()
