@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from api.database import init_db
@@ -5,18 +7,15 @@ from api.routes.accounts import router as accounts_router
 from api.routes.auth import router as auth_router
 from api.routes.categories import router as categories_router
 from api.routes.transactions import router as transactions_router
-from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
 async def lifespan(app):
     init_db()
     yield
-    
-    
+
+
 app = FastAPI(title="Personal Finance Tracker API", root_path="/api/v1", lifespan=lifespan)
-
-
 
 
 app.include_router(auth_router, tags=["auth"])
