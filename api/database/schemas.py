@@ -62,3 +62,13 @@ class TransactionBase(SQLModel):
 
 class TransactionCreate(TransactionBase):
     pass
+
+
+class TransactionUpdate(SQLModel):
+    name: str | None = None
+    date: datetime.date | None = None
+    amount: Decimal | None = None
+    notes: str | None = None
+    account_id: int | None = None
+    category_id: int | None = None
+    kind: TransactionKind | None = None
