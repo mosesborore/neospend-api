@@ -1,8 +1,11 @@
 from fastapi.testclient import TestClient
 
+from api.database.db import init_db
 from main import app
 
 Client = TestClient(app)
+
+init_db()
 
 
 def make_auth_headers(email: str = "test@example.com", password: str = "secret"):

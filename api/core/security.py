@@ -9,13 +9,9 @@ from pwdlib import PasswordHash
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
+from api.core.config import settings
 from api.database.db import get_session
 from api.database.models import User
-
-SECRET_KEY = "328332cc7c45657a25beba138361da12c39ce9372f744e47f352a3cb31fbd9869c2bd8ea50d1c8fd32b16558563e3aab990d33de7a07324f6896c63640106cd107177334da3858a3e134aff16b087baf5199d217c3aa5528b32fc305f0e1501d1cf6bfb8ac476134e7f69edc59d89ece8a53bf7985517404aa1325f438a1e0"
-ALGORITHM = "HS256"
-EXPIRE_MINUTES = 60
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 password_hash = PasswordHash.recommended()
@@ -24,10 +20,10 @@ password_hash = PasswordHash.recommended()
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=EXPIRE_MINUTES))
+    expire = datetime.now() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
 
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 credentials_exception = HTTPException(
@@ -76,7 +72,7 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_session)
 ):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
         email: str = payload.get("sub")
         if email is None:

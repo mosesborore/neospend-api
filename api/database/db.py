@@ -1,18 +1,23 @@
 from sqlmodel import Session, SQLModel, create_engine, text
 
-from . import models as models
+from api.core.config import settings
 
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+from . import models  # noqa: F401
 
-engine = create_engine(sqlite_url, echo=True)
+engine = create_engine(
+    settings.DATABASE_URL,
+    echo=True,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+)
 
 
 def init_db():
     SQLModel.metadata.create_all(engine)
-    with engine.connect() as connection:
-        connection.execute(text("PRAGMA foreign_keys=ON"))
-        connection.commit()
+
+    if "sqlite" in settings.DATABASE_URL:
+        with engine.connect() as connection:
+            connection.execute(text("PRAGMA foreign_keys=ON"))
+            connection.commit()
 
 
 def get_session():

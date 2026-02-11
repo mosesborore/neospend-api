@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -7,7 +6,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
 from api.core.security import (
-    EXPIRE_MINUTES,
     Token,
     authenticate_user,
     create_access_token,
@@ -37,8 +35,8 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+
+    access_token = create_access_token(data={"sub": user.email})
 
     return Token(access_token=access_token, token_type="bearer")
 

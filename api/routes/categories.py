@@ -31,6 +31,7 @@ def create_category(
     payload.update({"name": name.strip().title(), "user_id": user.id})
 
     category = Category(**payload)
+    Category.model_validate
     session.add(category)
     session.commit()
     session.refresh(category)
