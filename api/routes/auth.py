@@ -14,7 +14,7 @@ from api.core.security import (
     get_current_active_user,
     get_password_hash,
 )
-from api.database import get_session
+from api.database.db import get_session
 from api.database.models import User
 from api.database.schemas import UserCreate, UserPublic
 

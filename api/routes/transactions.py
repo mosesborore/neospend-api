@@ -7,7 +7,7 @@ from sqlmodel import Session, and_, select
 from typing_extensions import Literal
 
 from api.core.security import get_current_active_user
-from api.database import get_session
+from api.database.db import get_session
 from api.database.models import Account, Category, Transaction, User
 from api.database.schemas import TransactionCreate, TransactionKind, TransactionUpdate
 

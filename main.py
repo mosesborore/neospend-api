@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from api.database import init_db
+from api.database.db import init_db
 from api.routes.accounts import router as accounts_router
 from api.routes.auth import router as auth_router
 from api.routes.categories import router as categories_router
