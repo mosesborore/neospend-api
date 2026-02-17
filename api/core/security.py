@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+import datetime
 from typing import Annotated
 
 import jwt
@@ -17,12 +17,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
 password_hash = PasswordHash.recommended()
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
 
-    to_encode.update({"exp": expire})
+    now = datetime.datetime.now(datetime.UTC)
+    expire = now + (expires_delta or datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    to_encode.update({"exp": expire, "iat": now})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
