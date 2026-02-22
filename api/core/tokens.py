@@ -153,7 +153,7 @@ def get_or_create(entity: Any, ident: Any, defaults: Optional[dict] = None):
             item = entity(**defaults)
             session.add(item)
             session.commit()
-            session.refresh()
+            session.refresh(item)
 
         return item
 
