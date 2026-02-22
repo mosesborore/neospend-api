@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 from api.database.schemas import AccountBase, CategoryBase, TransactionBase, UserBase
 
@@ -9,9 +9,23 @@ from api.database.schemas import AccountBase, CategoryBase, TransactionBase, Use
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
     password: str
+    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     account: list["Account"] | None = Relationship(back_populates="user")
     categories: list["Category"] | None = Relationship(back_populates="user")
     transactions: list["Transaction"] | None = Relationship(back_populates="user")
+    refresh_tokens: list["OutstandingToken"] | None = Relationship(back_populates="user")
+
+
+class OutstandingToken(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    token: str
+    jti: str = Field(unique=True, max_length=255)
+    user_id: int = Field(foreign_key="user.id")
+    user: User = Relationship(back_populates="refresh_tokens")
+    issued_at: int = Field(default=datetime.datetime.now(datetime.UTC))
+    expire_at: int = Field(nullable=False)
+    revoked_at: int | None = Field(default=None)  # manual revocation
+    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now, nullable=True)
 
 
 class Account(AccountBase, table=True):

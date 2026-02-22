@@ -21,6 +21,11 @@ def init_db():
 
 
 def get_session():
-    """Returns a session to use"""
+    """Returns a session to use which is within a context manager"""
     with Session(engine) as session:
         yield session
+
+
+def create_session():
+    """Returns bare Session object"""
+    return Session(engine)

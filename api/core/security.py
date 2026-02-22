@@ -1,4 +1,3 @@
-import datetime
 from typing import Annotated
 
 import jwt
@@ -13,20 +12,8 @@ from api.core.config import settings
 from api.database.db import get_session
 from api.database.models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login", refreshUrl="/api/v1/refresh")
 password_hash = PasswordHash.recommended()
-
-
-def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
-    """Create JWT access token"""
-    to_encode = data.copy()
-
-    now = datetime.datetime.now(datetime.UTC)
-    expire = now + (expires_delta or datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
-
-    to_encode.update({"exp": expire, "iat": now})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -37,6 +24,7 @@ credentials_exception = HTTPException(
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 
@@ -76,10 +64,12 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 
-        email: str = payload.get("sub")
-        if email is None:
+        print(payload)
+
+        user_id: str = payload.get(settings.USER_ID_CLAIM)
+        if user_id is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
+        token_data = TokenData(email=user_id)
 
     except InvalidTokenError:
         raise credentials_exception

@@ -35,6 +35,9 @@ class Config(BaseModel):
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    JTI_CLAIM: str = os.getenv("JTI_CLAIM", "jti")
+    TOKEN_TYPE_CLAIM: str = os.getenv("TOKEN_TYPE_CLAIM", "token_type")
+    USER_ID_CLAIM: str = os.getenv("USER_ID_CLAIM", "user_id")
     SQLALCHEMY_ECHO: bool = os.getenv("SQLALCHEMY_ECHO", "True").lower() in (
         "true",
         "1",
