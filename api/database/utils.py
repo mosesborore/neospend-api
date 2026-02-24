@@ -1,9 +1,21 @@
 from typing import Any, Optional
 
-from sqlmodel import select
+from sqlmodel import select, Session
 
 from .db import create_session
-from .models import OutstandingToken
+from .models import OutstandingToken, User
+
+
+def get_user(filters: dict[str, Any], session: Session):
+    """Retrieve the user using `filters` criteria
+
+    :param filters: dict with filtering criteria
+    :param session: db session to use
+
+    :returns: User or None
+    """
+    statement = select(User).filter_by(**filters)
+    return session.exec(statement).first()
 
 
 def get_outstanding_token_by_jti(jti: str):
