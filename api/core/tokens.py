@@ -8,6 +8,7 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from api.core.config import settings
 from api.database.db import create_session
 from api.database.models import OutstandingToken, User
+from api.database.utils import get_or_create
 
 from .utils import aware_utcnow, datetime_to_epoch
 
@@ -139,25 +140,6 @@ def get_user_by_id(user_id: int):
         return session.get(User, user_id)
 
 
-def get_or_create(entity: Any, ident: Any, defaults: Optional[dict] = None):
-    """
-    :param entity: a mapped class indicating the
-    type of entity to be loaded.
-
-    :param ident: value representing the primary key.
-    :return: The `entity` instance
-    """
-    with create_session() as session:
-        item = session.get(entity, ident)
-        if item is None:
-            item = entity(**defaults)
-            session.add(item)
-            session.commit()
-            session.refresh(item)
-
-        return item
-
-
 class RefreshToken(Token):
     token_type = "refresh"
     lifetime = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -192,9 +174,9 @@ class RefreshToken(Token):
         if user is None:
             raise TokenError("Token must have a user")
 
-        return get_or_create(
+        obj, _ = get_or_create(
             OutstandingToken,
-            jti,
+            {"jti": jti},
             defaults={
                 "jti": jti,
                 "user_id": user.id,
@@ -202,6 +184,7 @@ class RefreshToken(Token):
                 "expire_at": exp,
             },
         )
+        return obj
 
     def revoke(self) -> None:
         """
