@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
@@ -11,13 +12,13 @@ from api.core.security import (
     authenticate_user,
     get_current_active_user,
     get_password_hash,
-    oauth2_scheme,
 )
 from api.core.tokens import RefreshToken, TokenError
 from api.core.utils import aware_utcnow, datetime_from_epoch
 from api.database.db import get_session
-from api.database.models import OutstandingToken, User
+from api.database.models import User
 from api.database.schemas import UserCreate, UserPublic
+from api.database.utils import get_outstanding_token_by_jti
 
 from .schemas import GenericResponse
 
@@ -26,6 +27,10 @@ router = APIRouter()
 
 SessionDep = Annotated[Session, Depends(get_session)]
 AuthorizedUser = Annotated[User, Depends(get_current_active_user)]
+
+
+class PrevRefreshToken(BaseModel):
+    refresh_token: str
 
 
 @router.post("/login", response_model=Token)
@@ -50,23 +55,23 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], session: S
 
 
 @router.post("/refresh", response_model=Token)
-def refresh_token(token: Annotated[str, Depends(oauth2_scheme)], session: SessionDep):
+def refresh_token(prev_refresh_token: PrevRefreshToken, session: SessionDep):
     """
     Refresh access token using a valid refresh token.
     Validates the refresh token and returns new access and refresh tokens.
     """
     try:
         # Decode and validate the refresh token
-        refresh_token = RefreshToken(token)
+        refresh_token = RefreshToken(prev_refresh_token.refresh_token)
 
         # Check if token exists in database and is not revoked
         jti = refresh_token[settings.JTI_CLAIM]
-        outstanding_token = session.query(OutstandingToken).filter_by(jti=jti).first()
+        outstanding_token = get_outstanding_token_by_jti(jti)
 
         if not outstanding_token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token",
+                detail="Invalid refresh token.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -121,10 +126,10 @@ def refresh_token(token: Annotated[str, Depends(oauth2_scheme)], session: Sessio
             detail=f"Token validation failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except Exception:
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
+            detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         )
 
