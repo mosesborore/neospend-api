@@ -1,16 +1,17 @@
 from typing import Annotated
 
-import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from api.core.config import settings
 from api.database.db import get_session
 from api.database.models import User
+from api.database.utils import get_user
+
+from .tokens import AccessToken, TokenError
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login", refreshUrl="/api/v1/refresh")
 password_hash = PasswordHash.recommended()
@@ -29,7 +30,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    email: str | None = None
+    user_id: int | None = None
 
 
 def verify_password(plain_password: str, hashed_password: str):
@@ -40,16 +41,9 @@ def get_password_hash(password: str):
     return password_hash.hash(password)
 
 
-def get_user(*, email: str, session: Session):
-    get_user_expression = select(User).where(User.email == email)
-    user = session.exec(get_user_expression).first()
-
-    return user
-
-
 def authenticate_user(*, email: str, password: str, session: Session):
     """Authenticates the user"""
-    user = get_user(email=email, session=session)
+    user = get_user({"email": email}, session=session)
     if not user:
         return None
     if not verify_password(password, user.password):
@@ -62,20 +56,22 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], session: Session = Depends(get_session)
 ):
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        access_token = AccessToken(token)
 
-        print(payload)
-
-        user_id: str = payload.get(settings.USER_ID_CLAIM)
+        user_id: str = access_token.get(settings.USER_ID_CLAIM)
         if user_id is None:
             raise credentials_exception
-        token_data = TokenData(email=user_id)
+        token_data = TokenData(user_id=user_id)
 
-    except InvalidTokenError:
-        raise credentials_exception
+    except TokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Could not validate credentials: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # get the user from db
-    user = get_user(email=token_data.email, session=session)
+    user = get_user({"id": token_data.user_id}, session=session)
     if user is None:
         raise credentials_exception
     return user
