@@ -42,7 +42,7 @@ class Token:
             try:
                 self.payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             except ExpiredSignatureError as e:
-                raise ExpiredSignatureError("Token is expired") from e
+                raise ExpiredTokenError("Token is expired") from e
             except InvalidTokenError as e:
                 raise TokenError("Token is invalid") from e
         else:
