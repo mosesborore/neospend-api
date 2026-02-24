@@ -9,7 +9,7 @@ from api.core.config import settings
 from api.database.db import create_session
 from api.database.models import OutstandingToken, User
 
-from .utils import aware_utcnow, datetime_from_epoch, datetime_to_epoch
+from .utils import aware_utcnow, datetime_to_epoch
 
 # JWT claim constants
 EXP_CLAIM = "exp"
@@ -199,7 +199,7 @@ class RefreshToken(Token):
                 "jti": jti,
                 "user_id": user.id,
                 "token": str(self),
-                "expire_at": datetime_from_epoch(exp),
+                "expire_at": exp,
             },
         )
 
