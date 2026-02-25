@@ -88,7 +88,7 @@ class Token:
             raise TokenError("Unable to encode the token") from e
 
     def get(self, key: str, default: Optional[Any] = None) -> Any:
-        return self.payload.get(key, None)
+        return self.payload.get(key, default)
 
     def __str__(self):
         """returns a token"""
