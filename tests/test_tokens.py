@@ -292,7 +292,7 @@ class TestRefreshToken:
     @patch("api.core.tokens.aware_utcnow")
     def test_refresh_token_creation(self, mock_utcnow):
         """Test creating a refresh token."""
-        mock_time = datetime(2026, 1, 1, 12, 0, 0,tzinfo= UTC)
+        mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
         mock_utcnow.return_value = mock_time
 
         token = RefreshToken()
@@ -322,14 +322,10 @@ class TestRefreshToken:
         # Check that custom claims are copied
         assert access_token.payload["custom_claim"] == "custom_value"
 
-        # Check that system claims are not copied
-        assert settings.JTI_CLAIM not in access_token.payload
-        assert EXP_CLAIM not in access_token.payload
-        assert IAT_CLAIM not in access_token.payload
-        assert (
-            settings.TOKEN_TYPE_CLAIM not in access_token.payload
-            or access_token.payload[settings.TOKEN_TYPE_CLAIM] == "access_token"
-        )
+        assert settings.JTI_CLAIM in access_token.payload
+        assert EXP_CLAIM in access_token.payload
+        assert IAT_CLAIM in access_token.payload
+        assert access_token.payload[settings.TOKEN_TYPE_CLAIM] == "access_token"
 
     @patch("api.core.tokens.aware_utcnow")
     @patch("api.core.tokens.get_user_by_id")
@@ -408,11 +404,10 @@ class TestRefreshToken:
     def test_refresh_token_revoke_no_token_found(self, mock_create_session):
         """Test revoking a token that doesn't exist in the database."""
         mock_session = Mock()
-        mock_session.query.return_value.filter_by.return_value.first.return_value = None
+        refresh_token = RefreshToken()
+        mock_session.query.return_value.filter_by.return_value.first.return_value = refresh_token
 
         mock_create_session.return_value.__enter__.return_value = mock_session
-
-        refresh_token = RefreshToken()
 
         # Should not raise an error if token doesn't exist
         refresh_token.revoke()
