@@ -45,11 +45,19 @@ class Token:
                 raise ExpiredTokenError("Token is expired") from e
             except InvalidTokenError as e:
                 raise TokenError("Token is invalid") from e
+            
+            if verify:
+                self.verify()
         else:
             self.payload = {settings.TOKEN_TYPE_CLAIM: self.token_type}
             self.set_iat(at_time=self.current_time)
             self.set_exp(from_time=self.current_time, lifetime=self.lifetime)
             self.set_jti()
+            
+    def verify(self):
+        """perform additional validation"""
+        if settings.JTI_CLAIM is not None  and settings.JTI_CLAIM not in self.payload:
+            raise TokenError("Token has no id")
 
     def set_jti(self) -> None:
         """
@@ -141,7 +149,7 @@ class RefreshToken(Token):
     no_copy_claims = (settings.TOKEN_TYPE_CLAIM, settings.JTI_CLAIM, EXP_CLAIM, IAT_CLAIM)
 
     @property
-    def access_token(self):
+    def access_token(self) -> AccessToken:
         access = self.access_token_class()
 
         access.set_exp(from_time=self.current_time)
@@ -160,7 +168,7 @@ class RefreshToken(Token):
         """
         jti = self.payload[settings.JTI_CLAIM]
         exp = self.payload[EXP_CLAIM]
-        user_id: int = self.payload.get(settings.USER_ID_CLAIM)
+        user_id = int(self.payload.get(settings.USER_ID_CLAIM))
 
         user = get_user_by_id(user_id)
 
