@@ -109,13 +109,6 @@ class Token:
     def __contains__(self, key: str) -> Any:
         return key in self.payload
 
-    def outstand(self) -> Optional[OutstandingToken]:
-        """
-        Ensures this token is included in the outstanding token list and
-        adds it to the outstanding token list if not.
-        """
-        return self.save()
-
     @classmethod
     def create_for_user(cls, user: User) -> "Token":
         if user is None:
