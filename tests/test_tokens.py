@@ -42,8 +42,12 @@ class TestToken:
         with pytest.raises(TokenError, match="Cannot create token with not type or lifetime"):
             Token()
 
-    def test_token_creation_new_token(self):
+    @patch("api.core.tokens.aware_utcnow")
+    def test_token_creation_new_token(self, mock_aware_utcnow):
         """Test creating a new token."""
+
+        mock_time = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+        mock_aware_utcnow.return_value = mock_time
 
         # Create a test token class
         class TestToken(Token):
@@ -54,6 +58,7 @@ class TestToken:
 
         # Check payload structure
         assert token.payload[settings.TOKEN_TYPE_CLAIM] == "test"
+        assert token.payload[IAT_CLAIM] == int(mock_time.timestamp())
         assert isinstance(token.payload[IAT_CLAIM], int)
         assert isinstance(token.payload[EXP_CLAIM], int)
         assert token.payload[EXP_CLAIM] > token.payload[IAT_CLAIM]
@@ -387,7 +392,7 @@ class TestRefreshToken:
         # Create mock session and token
         mock_session = Mock()
         mock_token = Mock()
-        mock_session.query.return_value.filter_by.return_value.first.return_value = mock_token
+        mock_session.exec.return_value.first.return_value = mock_token
 
         mock_create_session.return_value.__enter__.return_value = mock_session
         mock_datetime_to_epoch.return_value = 1234567890
@@ -400,20 +405,21 @@ class TestRefreshToken:
         assert mock_token.revoked_at == 1234567890
         mock_session.commit.assert_called_once()
 
+    @patch("api.core.tokens.select")
     @patch("api.core.tokens.create_session")
-    def test_refresh_token_revoke_no_token_found(self, mock_create_session):
+    def test_refresh_token_revoke_no_token_found(self, mock_create_session, mock_select):
         """Test revoking a token that doesn't exist in the database."""
         mock_session = Mock()
         refresh_token = RefreshToken()
-        mock_session.query.return_value.filter_by.return_value.first.return_value = refresh_token
+        mock_session.exec.return_value.first.return_value = None
 
         mock_create_session.return_value.__enter__.return_value = mock_session
 
         # Should not raise an error if token doesn't exist
         refresh_token.revoke()
 
-        # Commit should still be called (though it does nothing)
-        mock_session.commit.assert_called_once()
+        # Commit should not be called (though it does nothing)
+        assert not mock_session.commit.called
 
 
 class TestGetUserById:

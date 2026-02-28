@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+from sqlmodel import select
 
 from api.core.config import settings
 from api.database.db import create_session
@@ -45,7 +46,7 @@ class Token:
                 raise ExpiredTokenError("Token is expired") from e
             except InvalidTokenError as e:
                 raise TokenError("Token is invalid") from e
-            
+
             if verify:
                 self.verify()
         else:
@@ -53,10 +54,10 @@ class Token:
             self.set_iat(at_time=self.current_time)
             self.set_exp(from_time=self.current_time, lifetime=self.lifetime)
             self.set_jti()
-            
+
     def verify(self):
         """perform additional validation"""
-        if settings.JTI_CLAIM is not None  and settings.JTI_CLAIM not in self.payload:
+        if settings.JTI_CLAIM is not None and settings.JTI_CLAIM not in self.payload:
             raise TokenError("Token has no id")
 
     def set_jti(self) -> None:
@@ -194,7 +195,8 @@ class RefreshToken(Token):
         jti = self.payload[settings.JTI_CLAIM]
 
         with create_session() as session:
-            token = session.query(OutstandingToken).filter_by(jti=jti).first()
+            statement = select(OutstandingToken).filter_by(jti=jti)
+            token = session.exec(statement).first()
             if token:
                 token.revoked_at = datetime_to_epoch(self.current_time)
                 session.commit()
