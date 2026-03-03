@@ -29,10 +29,10 @@ class ExpiredTokenError(TokenError):
 class Token:
     """Class to validate and wrap existing JWT or create new JWT"""
 
-    token_type: Optional[None] = None
+    token_type: Optional[str] = None
     lifetime: Optional[timedelta] = None
 
-    def __init__(self, token: Optional["Token"] = None, verify: bool = True):
+    def __init__(self, token: Optional[str] = None, verify: bool = True):
         if self.token_type is None or self.lifetime is None:
             raise TokenError("Cannot create token with not type or lifetime")
 
@@ -50,7 +50,7 @@ class Token:
             if verify:
                 self.verify()
         else:
-            self.payload = {settings.TOKEN_TYPE_CLAIM: self.token_type}
+            self.payload: dict[str, Any] = {settings.TOKEN_TYPE_CLAIM: self.token_type}
             self.set_iat(at_time=self.current_time)
             self.set_exp(from_time=self.current_time, lifetime=self.lifetime)
             self.set_jti()
@@ -75,8 +75,12 @@ class Token:
         """updates the expiration time of the token"""
         if from_time is None:
             from_time = self.current_time
+
         if lifetime is None:
             lifetime = self.lifetime
+
+        if lifetime is None:
+            raise TokenError("Token expiration cannot be set without lifetime.")
 
         exp = from_time + lifetime
 
@@ -118,19 +122,6 @@ class Token:
     def __contains__(self, key: str) -> Any:
         return key in self.payload
 
-    @classmethod
-    def create_for_user(cls, user: User) -> "Token":
-        if user is None:
-            raise TokenError("User cannot be None")
-
-        # TODO: check if the user is active (add is_active field to User model)
-        user_id = str(user.id)
-
-        token = cls()
-        token[settings.USER_ID_CLAIM] = user_id
-
-        return token
-
 
 class AccessToken(Token):
     token_type = "access_token"
@@ -147,6 +138,7 @@ class RefreshToken(Token):
     lifetime = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     access_token_class = AccessToken
 
+    # attributes to not copy over from this token
     no_copy_claims = (settings.TOKEN_TYPE_CLAIM, settings.JTI_CLAIM, EXP_CLAIM, IAT_CLAIM)
 
     @property
@@ -163,15 +155,31 @@ class RefreshToken(Token):
 
         return access
 
+    @classmethod
+    def create_for_user(cls, user: User) -> RefreshToken:
+        if user is None:
+            raise TokenError("User cannot be None")
+
+        # TODO: check if the user is active (add is_active field to User model)
+        user_id = str(user.id)
+
+        token = cls()
+        token[settings.USER_ID_CLAIM] = user_id
+
+        return token
+
     def save(self) -> OutstandingToken:
         """
         Saves this token in the db
         """
         jti = self.payload[settings.JTI_CLAIM]
         exp = self.payload[EXP_CLAIM]
-        user_id = int(self.payload.get(settings.USER_ID_CLAIM))
+        user_id = self.payload.get(settings.USER_ID_CLAIM)
 
-        user = get_user_by_id(user_id)
+        if not user_id:
+            raise TokenError("User claim not set in the payload.")
+
+        user = get_user_by_id(int(user_id))
 
         if user is None:
             raise TokenError("Token must have a user")
