@@ -6,12 +6,13 @@ import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from sqlmodel import select
 
-from api.core.config import settings
-from api.database.db import create_session
-from api.database.models import OutstandingToken, User
-from api.database.utils import get_or_create
+from auth.models.token import OutstandingToken
+from core.config import settings
+from database.db import create_session
+from database.utils import get_or_create
+from user.models.user import User
 
-from .utils import aware_utcnow, datetime_to_epoch
+from .utils import aware_utcnow, datetime_to_epoch, get_hash
 
 # JWT claim constants
 EXP_CLAIM = "exp"
@@ -184,13 +185,17 @@ class RefreshToken(Token):
         if user is None:
             raise TokenError("Token must have a user")
 
+        token = str(self)
+
+        token_hash = get_hash(token.encode())
+
         obj, _ = get_or_create(
             OutstandingToken,
             {"jti": jti},
             defaults={
                 "jti": jti,
                 "user_id": user.id,
-                "token": str(self),
+                "token": token_hash,
                 "expire_at": exp,
             },
         )

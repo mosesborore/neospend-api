@@ -1,7 +1,6 @@
 import datetime
 from calendar import timegm
-
-from .config import settings
+from hashlib import sha256
 
 
 def aware_utcnow():
@@ -21,6 +20,6 @@ def datetime_from_epoch(ts: float):
     return datetime.datetime.fromtimestamp(ts, tz=datetime.UTC)
 
 
-def get_refresh_token_expiration():
-    expire = aware_utcnow() + datetime.timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    return datetime_to_epoch(expire)
+def get_hash(data: bytes):
+    """returns the hash of the `data` using sha256 function"""
+    return sha256(data).hexdigest()

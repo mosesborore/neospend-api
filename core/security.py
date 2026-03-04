@@ -6,10 +6,10 @@ from pwdlib import PasswordHash
 from pydantic import BaseModel
 from sqlmodel import Session
 
-from api.core.config import settings
-from api.database.db import get_session
-from api.database.models import User
-from api.database.utils import get_user
+from core.config import settings
+from database.db import get_session
+from user.models.user import User
+from user.services.user_service import get_user_by_email
 
 from .tokens import AccessToken, TokenError
 
@@ -41,17 +41,6 @@ def get_password_hash(password: str):
     return password_hash.hash(password)
 
 
-def authenticate_user(*, email: str, password: str, session: Session):
-    """Authenticates the user"""
-    user = get_user({"email": email}, session=session)
-    if not user:
-        return None
-    if not verify_password(password, user.password):
-        return None
-
-    return user
-
-
 async def get_current_user_cookie(request: Request, session: Session = Depends(get_session)):
     # add CSRF token checking, or use middleware
     token = request.cookies.get("auth_token")
@@ -77,7 +66,7 @@ async def get_current_user_cookie(request: Request, session: Session = Depends(g
         )
 
     # get the user from db
-    user = get_user({"id": token_data.user_id}, session=session)
+    user = get_user_by_email({"id": token_data.user_id}, session=session)
     if user is None:
         raise credentials_exception
     return user
@@ -102,7 +91,7 @@ async def get_current_user(
         )
 
     # get the user from db
-    user = get_user({"id": token_data.user_id}, session=session)
+    user = get_user_by_email({"id": token_data.user_id}, session=session)
     if user is None:
         raise credentials_exception
     return user

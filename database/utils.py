@@ -1,28 +1,8 @@
 from typing import Any, Optional
 
-from sqlmodel import select, Session
+from sqlmodel import select
 
-from .db import create_session
-from .models import OutstandingToken, User
-
-
-def get_user(filters: dict[str, Any], session: Session):
-    """Retrieve the user using `filters` criteria
-
-    :param filters: dict with filtering criteria
-    :param session: db session to use
-
-    :returns: User or None
-    """
-    statement = select(User).filter_by(**filters)
-    return session.exec(statement).first()
-
-
-def get_outstanding_token_by_jti(jti: str):
-    """Retrieves refresh token with `jti` if any"""
-    with create_session() as session:
-        statement = select(OutstandingToken).where(OutstandingToken.jti == jti)
-        return session.exec(statement).first()
+from database.db import create_session
 
 
 def get_or_create(entity: Any, filter_map: dict[str, Any], defaults: Optional[dict] = None):
