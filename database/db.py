@@ -1,5 +1,6 @@
 from sqlmodel import Session, SQLModel, create_engine, text
 
+from account.models import account  # noqa: F401
 from auth.models.token import OutstandingToken  # noqa: F401
 from core.config import settings
 from user.models import user as user_model  # noqa: F401

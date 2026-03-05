@@ -10,42 +10,6 @@ class TransactionKind(str, Enum):
     EXPENSE = "expense"
 
 
-class UserBase(SQLModel):
-    name: str | None = Field(default=None)
-    email: str = Field(index=True, unique=True)
-
-
-class UserCreate(UserBase):
-    password: str
-
-
-class UserPublic(UserBase):
-    id: int
-
-
-class AccountBase(SQLModel):
-    name: str = Field(min_length=1, max_length=64)
-    initial_balance: Decimal = Field(default=0, max_digits=12, decimal_places=2)
-
-
-class AccountCreate(AccountBase):
-    pass
-
-
-class AccountUpdate(SQLModel):
-    name: str | None = None
-    initial_balance: Decimal | None = None
-
-
-class CategoryBase(SQLModel):
-    name: str = Field(min_length=1, max_length=64)
-    kind: TransactionKind
-
-
-class CategoryCreate(CategoryBase):
-    pass
-
-
 class CategoryUpdate(SQLModel):
     name: str | None = None
 

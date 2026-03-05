@@ -7,6 +7,7 @@ from core.utils import aware_utcnow
 from user.schemas.user import UserBase
 
 if TYPE_CHECKING:
+    from account.models.account import Account
     from auth.models.token import OutstandingToken
 
 
@@ -17,3 +18,4 @@ class User(UserBase, table=True):
     password: str
     created_at: datetime = Field(default_factory=aware_utcnow)
     refresh_tokens: list["OutstandingToken"] | None = Relationship(back_populates="user")
+    accounts: list["Account"] | None = Relationship(back_populates="user")
