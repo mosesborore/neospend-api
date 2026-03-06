@@ -2,16 +2,7 @@ import datetime
 
 from sqlmodel import Field, Relationship
 
-from database.schemas import CategoryBase, TransactionBase
-
-
-class Category(CategoryBase, table=True):
-    id: int | None = Field(default=None, primary_key=True, index=True)
-    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    updated_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    user_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
-    user: User = Relationship(back_populates="categories")
-    transactions: list["Transaction"] = Relationship(back_populates="category")
+from database.schemas import TransactionBase
 
 
 class Transaction(TransactionBase, table=True):

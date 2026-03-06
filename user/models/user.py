@@ -9,6 +9,7 @@ from user.schemas.user import UserBase
 if TYPE_CHECKING:
     from account.models.account import Account
     from auth.models.token import OutstandingToken
+    from category.models.category import Category
 
 
 class User(UserBase, table=True):
@@ -19,3 +20,4 @@ class User(UserBase, table=True):
     created_at: datetime = Field(default_factory=aware_utcnow)
     refresh_tokens: list["OutstandingToken"] | None = Relationship(back_populates="user")
     accounts: list["Account"] | None = Relationship(back_populates="user")
+    categories: list["Category"] | None = Relationship(back_populates="user")
