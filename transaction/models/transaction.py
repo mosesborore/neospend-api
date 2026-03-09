@@ -1,14 +1,19 @@
-import datetime
+from datetime import datetime
 
 from sqlmodel import Field, Relationship
 
-from database.schemas import TransactionBase
+from account.models.account import Account
+from category.models.category import Category
+from core.utils import aware_utcnow
+from user.models.user import User
+
+from ..schemas.transaction import TransactionBase
 
 
 class Transaction(TransactionBase, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
-    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    updated_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+    created_at: datetime = Field(default_factory=aware_utcnow)
+    updated_at: datetime = Field(default_factory=aware_utcnow)
     user_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     user: User = Relationship(back_populates="transactions")
     account_id: int = Field(foreign_key="account.id", index=True, ondelete="CASCADE")

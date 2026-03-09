@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING
 from sqlmodel import Field, Relationship
 
 from core.utils import aware_utcnow
+from user.models.user import User
 
 from ..schemas.account import AccountBase
 
 if TYPE_CHECKING:
-    from user.models.user import User
+    from transaction.models.transaction import Transaction
 
 
 class Account(AccountBase, table=True):
@@ -19,3 +20,4 @@ class Account(AccountBase, table=True):
     updated_at: datetime = Field(default_factory=aware_utcnow)
     user_id: int = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
     user: "User" = Relationship(back_populates="accounts")
+    transactions: list["Transaction"] | None = Relationship(back_populates="account")

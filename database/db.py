@@ -4,6 +4,7 @@ from account.models import account  # noqa: F401
 from auth.models import token  # noqa: F401
 from category.models import category  # noqa: F401
 from core.config import settings
+from transaction.models import transaction  # noqa: F401
 from user.models import user  # noqa: F401
 
 engine = create_engine(

@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from account.models.account import Account
     from auth.models.token import OutstandingToken
     from category.models.category import Category
+    from transaction.models.transaction import Transaction
 
 
 class User(UserBase, table=True):
@@ -21,3 +22,4 @@ class User(UserBase, table=True):
     refresh_tokens: list["OutstandingToken"] | None = Relationship(back_populates="user")
     accounts: list["Account"] | None = Relationship(back_populates="user")
     categories: list["Category"] | None = Relationship(back_populates="user")
+    transactions: list["Transaction"] | None = Relationship(back_populates="user")
