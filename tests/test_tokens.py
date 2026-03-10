@@ -5,8 +5,9 @@ from uuid import uuid4
 import jwt
 import pytest
 
-from api.core.config import settings
-from api.core.tokens import (
+from auth.models.token import OutstandingToken
+from core.config import settings
+from core.tokens import (
     EXP_CLAIM,
     IAT_CLAIM,
     AccessToken,
@@ -15,7 +16,8 @@ from api.core.tokens import (
     Token,
     TokenError,
 )
-from api.database.models import OutstandingToken, User
+from core.utils import get_hash
+from user.models.user import User
 
 
 class TestTokenError:
@@ -42,7 +44,7 @@ class TestToken:
         with pytest.raises(TokenError, match="Cannot create token with not type or lifetime"):
             Token()
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_token_creation_new_token(self, mock_aware_utcnow):
         """Test creating a new token."""
 
@@ -187,7 +189,7 @@ class TestToken:
         assert new_jti != original_jti
         assert len(new_jti) == 32  # UUID hex length
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_set_exp(self, mock_utcnow):
         """Test setting expiration time."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -210,7 +212,7 @@ class TestToken:
         expected_custom_exp = int((custom_time + timedelta(hours=2)).timestamp())
         assert token.payload["custom_exp"] == expected_custom_exp
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_set_iat(self, mock_utcnow):
         """Test setting issued at time."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -245,13 +247,13 @@ class TestToken:
             with pytest.raises(TokenError, match="Unable to encode the token"):
                 str(token)
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_create_for_user(self, mock_utcnow):
         """Test creating a token for a user."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
         mock_utcnow.return_value = mock_time
 
-        class TestToken(Token):
+        class TestToken(RefreshToken):
             token_type = "test"
             lifetime = timedelta(hours=1)
 
@@ -267,18 +269,18 @@ class TestToken:
     def test_create_for_user_none_user(self):
         """Test that create_for_user raises error for None user."""
 
-        class TestToken(Token):
+        class TestToken(RefreshToken):
             token_type = "test"
             lifetime = timedelta(hours=1)
 
         with pytest.raises(TokenError, match="User cannot be None"):
-            TestToken.create_for_user(None)
+            TestToken.create_for_user(None)  # type: ignore
 
 
 class TestAccessToken:
     """Test the AccessToken class."""
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_access_token_creation(self, mock_utcnow):
         """Test creating an access token."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -294,7 +296,7 @@ class TestAccessToken:
 class TestRefreshToken:
     """Test the RefreshToken class."""
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_refresh_token_creation(self, mock_utcnow):
         """Test creating a refresh token."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -306,7 +308,7 @@ class TestRefreshToken:
         expected_exp = int((mock_time + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)).timestamp())
         assert token.payload[EXP_CLAIM] == expected_exp
 
-    @patch("api.core.tokens.aware_utcnow")
+    @patch("core.tokens.aware_utcnow")
     def test_refresh_token_access_token_property(self, mock_utcnow):
         """Test that refresh token can generate an access token."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -332,9 +334,9 @@ class TestRefreshToken:
         assert IAT_CLAIM in access_token.payload
         assert access_token.payload[settings.TOKEN_TYPE_CLAIM] == "access_token"
 
-    @patch("api.core.tokens.aware_utcnow")
-    @patch("api.core.tokens.get_user_by_id")
-    @patch("api.core.tokens.get_or_create")
+    @patch("core.tokens.aware_utcnow")
+    @patch("core.tokens.get_user_by_id")
+    @patch("core.tokens.get_or_create")
     def test_refresh_token_save(self, mock_get_or_create, mock_get_user, mock_utcnow):
         """Test saving a refresh token to the database."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -366,11 +368,11 @@ class TestRefreshToken:
         assert call_args[0][1]["jti"] == refresh_token.payload[settings.JTI_CLAIM]
         assert call_args[1]["defaults"]["user_id"] == 123
         assert call_args[1]["defaults"]["jti"] == refresh_token.payload[settings.JTI_CLAIM]
-        assert call_args[1]["defaults"]["token"] == str(refresh_token)
+        assert call_args[1]["defaults"]["token"] == get_hash(str(refresh_token))
 
         assert result == mock_outstanding
 
-    @patch("api.core.tokens.get_user_by_id")
+    @patch("core.tokens.get_user_by_id")
     def test_refresh_token_save_no_user(self, mock_get_user):
         """Test that save raises error when user doesn't exist."""
         mock_get_user.return_value = None
@@ -381,9 +383,9 @@ class TestRefreshToken:
         with pytest.raises(TokenError, match="Token must have a user"):
             refresh_token.save()
 
-    @patch("api.core.tokens.aware_utcnow")
-    @patch("api.core.tokens.datetime_to_epoch")
-    @patch("api.core.tokens.create_session")
+    @patch("core.tokens.aware_utcnow")
+    @patch("core.tokens.datetime_to_epoch")
+    @patch("core.tokens.create_session")
     def test_refresh_token_revoke(self, mock_create_session, mock_datetime_to_epoch, mock_utcnow):
         """Test revoking a refresh token."""
         mock_time = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
@@ -405,8 +407,8 @@ class TestRefreshToken:
         assert mock_token.revoked_at == 1234567890
         mock_session.commit.assert_called_once()
 
-    @patch("api.core.tokens.select")
-    @patch("api.core.tokens.create_session")
+    @patch("core.tokens.select")
+    @patch("core.tokens.create_session")
     def test_refresh_token_revoke_no_token_found(self, mock_create_session, mock_select):
         """Test revoking a token that doesn't exist in the database."""
         mock_session = Mock()
@@ -425,7 +427,7 @@ class TestRefreshToken:
 class TestGetUserById:
     """Test the get_user_by_id function."""
 
-    @patch("api.core.tokens.create_session")
+    @patch("core.tokens.create_session")
     def test_get_user_by_id(self, mock_create_session):
         """Test retrieving a user by ID."""
         mock_user = Mock()
@@ -434,7 +436,7 @@ class TestGetUserById:
 
         mock_create_session.return_value.__enter__.return_value = mock_session
 
-        from api.core.tokens import get_user_by_id
+        from core.tokens import get_user_by_id
 
         result = get_user_by_id(123)
 

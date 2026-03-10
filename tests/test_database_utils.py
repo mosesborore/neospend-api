@@ -1,7 +1,7 @@
 from uuid import uuid4
 
-from api.database.models import OutstandingToken
-from api.database.utils import get_or_create
+from auth.models.token import OutstandingToken
+from database.utils import get_or_create
 
 
 def test_get_or_create():

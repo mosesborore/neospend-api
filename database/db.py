@@ -1,0 +1,34 @@
+from sqlmodel import Session, SQLModel, create_engine, text
+
+from account.models import account  # noqa: F401
+from auth.models import token  # noqa: F401
+from category.models import category  # noqa: F401
+from core.config import settings
+from transaction.models import transaction  # noqa: F401
+from user.models import user  # noqa: F401
+
+engine = create_engine(
+    settings.DATABASE_URL,
+    echo=True,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+)
+
+
+def init_db():
+    SQLModel.metadata.create_all(engine)
+
+    if "sqlite" in settings.DATABASE_URL:
+        with engine.connect() as connection:
+            connection.execute(text("PRAGMA foreign_keys=ON"))
+            connection.commit()
+
+
+def get_session():
+    """Returns a session to use which is within a context manager"""
+    with Session(engine) as session:
+        yield session
+
+
+def create_session():
+    """Returns bare Session object"""
+    return Session(engine)
