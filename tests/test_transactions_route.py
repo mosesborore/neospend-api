@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from pytest import fixture
 
-from api.database.db import init_db
+from database.db import init_db
 from main import app
 
 init_db()
